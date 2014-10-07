@@ -1,36 +1,18 @@
-Getting-and-Cleaning-Data-Course-Project
-========================================
-Instructions
+Getting and Cleaning Data - Project
 
-Clone this repository and run the run_analysis.R script from within the cloned repository root directory.
+Source dataset https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip.
 
-This script will download and process the data set generating a tidy data set at ./data/TidyDataSet.txt
-
-Data Source
-
-This project uses the "Human Activity Recognition Using Smartphones Dataset" downloaded to ./data/Dataset.zip by run_analysis.R from: https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
-
-Script Walkthrough
-
-The run_analysis.R script will perform the following steps:
-
-Require reshape2 library (for the melt() function)
-Ensure the data path exists (./data)
-Checks if the data set archive was already downloaded
-Downloading the data set archive if it was not already
-Timestamps the data set archive file with when it wad downloaded
-Extracts the data set files from the archive
-Reads training & test column files into respective x,y,s variables
-Reads feaure names and sets column/variable names respectively
-Appends the training and test data set rows
-Creates a unified data set (data frame)
-Extracts measurements on mean & standard deviation, for each measurement
-Sets activity names on the class labels
-Labels data with descriptive variable/column names by removing special characters in the column names and by replacing hyphen's with underscores in the column names
-Removes columns used only for tidying up the data set (intermediate calculations)
-Melts the data set (note this is why we require reshape2 library)
-Creates a second, independent, tidy data set which contains the average of each variable for each activity and subject
-Saves the resulting tidy data set to file ./data/TidyDataSet.txt
+You should create one R script called run_analysis.R that does the following.
+Merges the training and the test sets to create one data set.
+Extracts only the measurements on the mean and standard deviation for each measurement.
+Uses descriptive activity names to name the activities in the data set
+Appropriately labels the data set with descriptive activity names.
+Creates a second, independent tidy data set with the average of each variable for each activity and each subject.
 Notes
 
-This was written on OSX, if the method="curl" fails for you you may need to remove this from the download.file line.
+Only vaiables containing mean() & std() are used.
+Requires the plyr & reshape2 packages.
+Assumes the dataset is unzipped in the current directory.
+
+$ Rscript run_analysis.R
+Yields tidy.txt & tidy.mean.txt.
