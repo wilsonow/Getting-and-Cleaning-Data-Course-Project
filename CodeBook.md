@@ -4,11 +4,8 @@ Course Project
 Human Activity Recognition Using Smartphones Dataset [1]
 
 Code Book
-
 For the provided UCI HAR Dataset the following vars are set from run_analysis.R. See the README for additional details.
-
 Tidy Mean
-
 A data.table named tidy.mean is set with the following columns. All units are maintained from the original data set. A file named tidy.mean.txt is written from run_analysis.R.
 
 column	description	type
@@ -16,9 +13,7 @@ Subject	Identifier of the subject	integer
 Activity	Label of the activity	factor
 MeanSamples	Mean of variables by Subject + Activity provided in tidy	numeric
 Tidy
-
 A data.table named tidy is set with the following columns. All units are maintained from the original data set. A file named tidy.txt is written from run_analysis.R.
-
 Column	Original Name
 Activity	
 Subject	
@@ -89,6 +84,7 @@ FFT.BodyBodyGyroMag.Std	fBodyBodyGyroMag-std()
 FFT.BodyBodyGyroJerkMag.Mean	fBodyBodyGyroJerkMag-mean()
 FFT.BodyBodyGyroJerkMag.Std	fBodyBodyGyroJerkMag-std()
 Notes
-
 Source data is from https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip.
+
+
 [2] http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
