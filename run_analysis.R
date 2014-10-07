@@ -1,122 +1,65 @@
-# Course Project - Getting and Cleaning Data
-#
-# NOTE: "Comments" as asked for in the instructions are placed in message()
-#       so that when this file is sourced the comments double as an informative
-#       walkthrough of what is going on  while the script runs :)
-#
+library(plyr)
+library(reshape2)
 
-#comment v
-message("Requiring reshape2 library for the melt() function...")
-#
-require("reshape2")
+## Goals
+## 1. each variable should be in one column
+## 2. each observation of that variable should be in a diferent row
+## 3. include ids to link tables together
 
-#comment v
-message("Ensuring the data path exists...")
-#
-dataPath <- "./data"
-if (!file.exists(dataPath)) { dir.create(dataPath) }
+## Merges the training and the test sets to create one data set.
 
-#comment v
-message("Checking if the data set archive was already downloaded...")
-#
-fileName <- "Dataset.zip"
-filePath <- paste(dataPath,fileName,sep="/")
-if (!file.exists(filePath)) { 
-    fileURL <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-    message("Downloading the data set archive...")
-    download.file(url=fileURL,destfile=filePath,method="curl")
+root.dir <- "UCI HAR Dataset"
+data.set <- list()
+
+message("loading features.txt")
+data.set$features <- read.table(paste(root.dir, "features.txt", sep="/"), col.names=c('id', 'name'), stringsAsFactors=FALSE)
+
+message("loading activity_features.txt")
+data.set$activity_labels <- read.table(paste(root.dir, "activity_labels.txt", sep="/"), col.names=c('id', 'Activity'))
+
+
+message("loading test set")
+data.set$test <- cbind(subject=read.table(paste(root.dir, "test", "subject_test.txt", sep="/"), col.names="Subject"),
+                       y=read.table(paste(root.dir, "test", "y_test.txt", sep="/"), col.names="Activity.ID"),
+                       x=read.table(paste(root.dir, "test", "x_test.txt", sep="/")))
+
+message("loading train set")
+data.set$train <- cbind(subject=read.table(paste(root.dir, "train", "subject_train.txt", sep="/"), col.names="Subject"),
+                        y=read.table(paste(root.dir, "train", "y_train.txt", sep="/"), col.names="Activity.ID"),
+                        x=read.table(paste(root.dir, "train", "X_train.txt", sep="/")))
+
+rename.features <- function(col) {
+    col <- gsub("tBody", "Time.Body", col)
+    col <- gsub("tGravity", "Time.Gravity", col)
+
+    col <- gsub("fBody", "FFT.Body", col)
+    col <- gsub("fGravity", "FFT.Gravity", col)
+
+    col <- gsub("\\-mean\\(\\)\\-", ".Mean.", col)
+    col <- gsub("\\-std\\(\\)\\-", ".Std.", col)
+
+    col <- gsub("\\-mean\\(\\)", ".Mean", col)
+    col <- gsub("\\-std\\(\\)", ".Std", col)
+
+    return(col)
 }
 
-#comment v
-message("Timestamping the data set archive file with when it wad downloaded...")
-#
-fileConn <- file(paste(filePath,".timestamp",sep=""))
-writeLines(date(), fileConn)
-close(fileConn)
+## Extracts only the measurements on the mean and standard deviation for each measurement.
 
-#comment v
-message("Extracting the data set files from the archive...")
-#
-unzip(zipfile=filePath, exdir=dataPath)
+tidy <- rbind(data.set$test, data.set$train)[,c(1, 2, grep("mean\\(|std\\(", data.set$features$name) + 2)]
 
-# Set the data path of the extracted archive files...
-dataSetPath <- paste(dataSetPath,"UCI HAR Dataset",sep="/")
+## Uses descriptive activity names to name the activities in the data set
 
-#comment v
-message("Reading training & test column files into respective x,y,s variables...")
-#
-xTrain <- read.table(file=paste(dataSetPath,"/train/","X_train.txt",sep=""),header=FALSE)
-xTest  <- read.table(file=paste(dataSetPath,"/test/","X_test.txt",sep=""),header=FALSE)
-yTrain <- read.table(file=paste(dataSetPath,"/train/","y_train.txt",sep=""),header=FALSE)
-yTest  <- read.table(file=paste(dataSetPath,"/test/","y_test.txt",sep=""),header=FALSE)
-sTrain <- read.table(file=paste(dataSetPath,"/train/","subject_train.txt",sep=""),header=FALSE)
-sTest  <- read.table(file=paste(dataSetPath,"/test/","subject_test.txt",sep=""),header=FALSE)
+names(tidy) <- c("Subject", "Activity.ID", rename.features(data.set$features$name[grep("mean\\(|std\\(", data.set$features$name)]))
 
-#comment v
-message("Readng feaure names and sets column/variable names respectively")
-#
-features <- read.table(file=paste(dataSetPath,"features.txt",sep="/"),header=FALSE)
-names(xTrain) <- features[,2]
-names(xTest)  <- features[,2]
-names(yTrain) <- "Class_Label"
-names(yTest)  <- "Class_Label"
-names(sTest)  <- "SubjectID"
-names(sTrain) <- "SubjectID"
+## Appropriately labels the data set with descriptive activity names.
 
-#comment v
-message("Merging (appending) the training and test data set rows...")
-xData <- rbind(xTrain, xTest)
-yData <- rbind(yTrain, yTest)
-sData <- rbind(sTrain, sTest)
+tidy <- merge(tidy, data.set$activity_labels, by.x="Activity.ID", by.y="id")
+tidy <- tidy[,!(names(tidy) %in% c("Activity.ID"))]
 
-#comment v
-message("Creating a unified data set (data frame)...")
-#
-data <- cbind(xData, yData, sData)
+## Creates a second, independent tidy data set with the average of each variable for each activity and each subject.
 
-#comment v
-message("Extracting measurements on mean & standard deviation, for each measurement...")
-#
-matchingCols <- grep("mean|std|Class|Subject", names(data))
-data <- data[,matchingCols]
+tidy.mean <- ddply(melt(tidy, id.vars=c("Subject", "Activity")), .(Subject, Activity), summarise, MeanSamples=mean(value))
 
-#comment v
-message("Using descriptive activity names to name the activities in data set...")
-message("eg. activity names on the class labels ;)")
-# NOTE: I got the Class_Label idea from a post on the discussion groups.
-activityNames <- read.table(file=paste(dataSetPath,"activity_labels.txt",sep="/"),header=FALSE)
-names(activityNames) <- c("Class_Label", "Class_Name")
-data <- merge(x=data, y=activityNames, by.x="Class_Label", by.y="Class_Label" )
-
-#comment v
-message("Labeling data with descriptive variable names...")
-message("by removing special characters in the column names...")
-#
-names(data) <- gsub(pattern="[()]", replacement="", names(data))
-
-#comment v
-message("and by replacing hyphen's with underscores in the column names...")
-# 
-names(data) <- gsub(pattern="[-]", replacement="_", names(data))
-
-#comment v
-message("Removing columns used only for tidying up the data set...")
-#
-data <- data[,!(names(data) %in% c("Class_Label"))]
-
-#comment v
-message("Melting the data set, note this is why we require reshape2 library...")
-#
-meltdataset <- melt(data=data, id=c("SubjectID", "Class_Name"))
-
-#comment v
-message("Creating a second, independent, tidy data set")
-message("Which contains the average of each variable for each activity and subject...")
-#
-tidyData <- dcast(data=meltdataset, SubjectID + Class_Name ~ variable, mean)
-
-#comment v
-message("Saving the tidy data set to file...")
-#
-tidyFilePath <- paste(dataPath,"TidyDataSet.txt",sep="/")
-write.csv(tidyData, file=tidyFilePath, row.names=FALSE)
+write.csv(tidy.mean, file = "tidy.mean.txt",row.names = FALSE)
+write.csv(tidy, file = "tidy.txt",row.names = FALSE)
