@@ -16,8 +16,7 @@ A data.table named `tidy` is set with the following columns.  All units are main
 
 | Column                       | Original Name               |
 | ---------------------------- | --------------------------- |
-| Activity                     |                             |
-| Subject                      |                             |
+| Activity                     |  Subject                    |
 | Time.BodyAcc.Mean.X          | tBodyAcc-mean()-X           |
 | Time.BodyAcc.Mean.Y          | tBodyAcc-mean()-Y           |
 | Time.BodyAcc.Mean.Z          | tBodyAcc-mean()-Z           |
