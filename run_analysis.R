@@ -99,24 +99,19 @@ data$activity <- factor(data$activity, levels=activity_labels$V1, labels=activit
 
 
 ## 2. Extracts only the measurements on the mean and standard deviation for each measurement. 
-dataset1 <- data[,c(1,2,grep("std", colnames(data)), grep("mean", colnames(data)))]
+tidy <- data[,c(1,2,grep("std", colnames(data)), grep("mean", colnames(data)))]
 
 
-# save dataset1 into results folder
-saveResult(dataset1,"dataset1")
+# save tidy into results folder
+saveResult(tidy,"tidy")
 
 ## 5. Creates a second, independent tidy data set with the average of each variable for each activity and each subject. 
-dataset2 <- ddply(dataset1, .(id, activity), .fun=function(x){ colMeans(x[,-c(1:2)]) })
+tidy.mean <- ddply(tidy, .(id, activity), .fun=function(x){ colMeans(x[,-c(1:2)]) })
 
 # Adds "_mean" to colnames
-colnames(dataset2)[-c(1:2)] <- paste(colnames(dataset2)[-c(1:2)], "_mean", sep="")
+colnames(tidy.mean)[-c(1:2)] <- paste(colnames(tidy.mean)[-c(1:2)], "_mean", sep="")
 
-# Save tidy dataset2 into results folder
-saveResult(dataset2,"dataset2")
-
-#Merge dataset1 and dataset2
-tidy <- merge(dataset1, dataset2 )
-
-tidy <- tidy[,!(names(tidy) %in% c("Activity.ID"))]
+# Save tidy tidy.mean into results folder
+saveResult(tidy.mean,"tidy.mean")
 
 write.csv(tidy, file = "tidy.txt",row.names = FALSE)
