@@ -84,6 +84,43 @@ A data.table named `tidy` is set with the following columns.  All units are main
 | FFT.BodyBodyGyroJerkMag.Mean | fBodyBodyGyroJerkMag-mean() |
 | FFT.BodyBodyGyroJerkMag.Std  | fBodyBodyGyroJerkMag-std()  |
 
+### Description of the run_analytics.R process
+
+1.  Loads library plyr
+2.  Downloads required data from (https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip)
+3.  Creates results folder
+4.  Loads feature data set features.txt used for columns
+5.  Loads and appends train dataset using X_train.txt, y_train.txt, subject_train.txt
+      subject_train contains the ids
+      y_train contains the activity labels
+      X_train contains the data using the feature data set as columns
+6.  Loads and appends test dataset using X_test.txt, y_test.txt, subject_test.txt
+      subject_test contains the ids
+      y_test contains the activity labels
+      X_test contains the data using the feature data set as columns
+7.  Appends train and test data
+8.  Rearrange the data using id
+9.  Loading activity labels activity_labels.txt
+10. Changes the data activity row to use the activity labels
+11. Extracts the mean,std into tidy
+12. Saves tidy into result/tidy.csv
+13. Uses plur to calculate mean on activity for each id
+14. appends _mean to all data columns
+15. saves the tidy.mean into result/tidy.mean.csv
+
+
+## tidy.csv
+
+contains 10299 rows and 81 columns in a default csv format.
+
+## tidy.mean.csv
+
+contains 180 rows and 81 columns in a default csv format.
+
+
+
+
+
 ### Notes
 
 Source data is from https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip.
