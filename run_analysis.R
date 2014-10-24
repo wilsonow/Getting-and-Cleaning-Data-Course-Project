@@ -1,65 +1,122 @@
-library(plyr)
-library(reshape2)
+file <- "data.zip"
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+data_path <- "UCI HAR Dataset"
+result_folder <- "results"
 
-## Goals
-## 1. each variable should be in one column
-## 2. each observation of that variable should be in a diferent row
-## 3. include ids to link tables together
+##Install required packacets  
+# looks if package is installed
 
-## Merges the training and the test sets to create one data set.
-
-root.dir <- "UCI HAR Dataset"
-data.set <- list()
-
-message("loading features.txt")
-data.set$features <- read.table(paste(root.dir, "features.txt", sep="/"), col.names=c('id', 'name'), stringsAsFactors=FALSE)
-
-message("loading activity_features.txt")
-data.set$activity_labels <- read.table(paste(root.dir, "activity_labels.txt", sep="/"), col.names=c('id', 'Activity'))
-
-
-message("loading test set")
-data.set$test <- cbind(subject=read.table(paste(root.dir, "test", "subject_test.txt", sep="/"), col.names="Subject"),
-                       y=read.table(paste(root.dir, "test", "y_test.txt", sep="/"), col.names="Activity.ID"),
-                       x=read.table(paste(root.dir, "test", "x_test.txt", sep="/")))
-
-message("loading train set")
-data.set$train <- cbind(subject=read.table(paste(root.dir, "train", "subject_train.txt", sep="/"), col.names="Subject"),
-                        y=read.table(paste(root.dir, "train", "y_train.txt", sep="/"), col.names="Activity.ID"),
-                        x=read.table(paste(root.dir, "train", "X_train.txt", sep="/")))
-
-rename.features <- function(col) {
-    col <- gsub("tBody", "Time.Body", col)
-    col <- gsub("tGravity", "Time.Gravity", col)
-
-    col <- gsub("fBody", "FFT.Body", col)
-    col <- gsub("fGravity", "FFT.Gravity", col)
-
-    col <- gsub("\\-mean\\(\\)\\-", ".Mean.", col)
-    col <- gsub("\\-std\\(\\)\\-", ".Std.", col)
-
-    col <- gsub("\\-mean\\(\\)", ".Mean", col)
-    col <- gsub("\\-std\\(\\)", ".Std", col)
-
-    return(col)
+if(!is.element("plyr", installed.packages()[,1])){
+  print("Installing packages")
+  install.packages("plyr")
 }
 
-## Extracts only the measurements on the mean and standard deviation for each measurement.
+library(plyr)
 
-tidy <- rbind(data.set$test, data.set$train)[,c(1, 2, grep("mean\\(|std\\(", data.set$features$name) + 2)]
+## Create data and folders   
+# verifies the data zip file has been downloaded
+if(!file.exists(file)){
+  
+  ##Downloads the data file
+  print("downloading Data")
+  download.file(url,file, mode = "wb")
+  
+}
 
-## Uses descriptive activity names to name the activities in the data set
+if(!file.exists(result_folder)){
+  print("Creating result folder")
+  dir.create(result_folder)
+} 
 
-names(tidy) <- c("Subject", "Activity.ID", rename.features(data.set$features$name[grep("mean\\(|std\\(", data.set$features$name)]))
+##reads a table from the zip data file and applies cols
+getTable <- function (filename,cols = NULL){
+  
+  print(paste("Getting table:", filename))
+  
+  f <- unz(file, paste(data_path,filename,sep="/"))
+  
+  data <- data.frame()
+  
+  if(is.null(cols)){
+    data <- read.table(f,sep="",stringsAsFactors=F)
+  } else {
+    data <- read.table(f,sep="",stringsAsFactors=F, col.names= cols)
+  }
+  
+  
+  data
+  
+}
 
-## Appropriately labels the data set with descriptive activity names.
+##Reads and creates a complete data set
+getData <- function(type, features){
+  
+  print(paste("Getting data", type))
+  
+  subject_data <- getTable(paste(type,"/","subject_",type,".txt",sep=""),"id")
+  y_data <- getTable(paste(type,"/","y_",type,".txt",sep=""),"activity")    
+  x_data <- getTable(paste(type,"/","X_",type,".txt",sep=""),features$V2) 
+  
+  return (cbind(subject_data,y_data,x_data)) 
+}
 
-tidy <- merge(tidy, data.set$activity_labels, by.x="Activity.ID", by.y="id")
+##saves the data into the result folder
+saveResult <- function (data,name){
+  
+  print(paste("Saving data", name))
+  
+  file <- paste(result_folder, "/", name,".csv" ,sep="")
+  write.csv(data,file)
+}
+
+
+
+##get common data tables
+
+#features used for col names when creating train and test data sets
+features <- getTable("features.txt")
+
+## Load the data sets
+train <- getData("train",features)
+test <- getData("test",features)
+
+## 1. Merges the training and the test sets to create one data set. < DONE
+# merge datasets
+data <- rbind(train, test)
+
+# rearrange the data using id
+data <- arrange(data, id)
+
+
+
+## 3. Uses descriptive activity names to name the activities in the data set < DONE
+## 4. Appropriately labels the data set with descriptive activity names.  < DONE
+
+activity_labels <- getTable("activity_labels.txt")
+
+data$activity <- factor(data$activity, levels=activity_labels$V1, labels=activity_labels$V2)
+
+
+
+## 2. Extracts only the measurements on the mean and standard deviation for each measurement. 
+dataset1 <- data[,c(1,2,grep("std", colnames(data)), grep("mean", colnames(data)))]
+
+
+# save dataset1 into results folder
+saveResult(dataset1,"dataset1")
+
+## 5. Creates a second, independent tidy data set with the average of each variable for each activity and each subject. 
+dataset2 <- ddply(dataset1, .(id, activity), .fun=function(x){ colMeans(x[,-c(1:2)]) })
+
+# Adds "_mean" to colnames
+colnames(dataset2)[-c(1:2)] <- paste(colnames(dataset2)[-c(1:2)], "_mean", sep="")
+
+# Save tidy dataset2 into results folder
+saveResult(dataset2,"dataset2")
+
+#Merge dataset1 and dataset2
+tidy <- merge(dataset1, dataset2 )
+
 tidy <- tidy[,!(names(tidy) %in% c("Activity.ID"))]
 
-## Creates a second, independent tidy data set with the average of each variable for each activity and each subject.
-
-tidy.mean <- ddply(melt(tidy, id.vars=c("Subject", "Activity")), .(Subject, Activity), summarise, MeanSamples=mean(value))
-
-write.csv(tidy.mean, file = "tidy.mean.txt",row.names = FALSE)
 write.csv(tidy, file = "tidy.txt",row.names = FALSE)
